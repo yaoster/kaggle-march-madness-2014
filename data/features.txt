@@ -1,0 +1,11 @@
+target:
+higher seeded team points - lower seeded team points (or random ordering if equal)
+
+features:
+higher seed vs lower seed
+hseed record (take into account schedule strength? use moving average?)
+lseed record (take into account schedule strength? use moving average?)
+hseed schedule strength
+lseed schedule strength
+hseed conference strength
+lseed conference strength
