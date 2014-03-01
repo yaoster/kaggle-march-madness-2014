@@ -1,5 +1,5 @@
 target:
-higher seeded team points - lower seeded team points (or random ordering if equal)
+higher seeded team points - lower seeded team points (or alphabetical ordering if equal)
 
 features:
 higher seed vs lower seed
@@ -9,3 +9,10 @@ hseed schedule strength
 lseed schedule strength
 hseed conference strength
 lseed conference strength
+
+NS features:
+AP preseason polls: www.collegepollarchive.com
+Tournament seeds - figure out if there is across-region ordering
+
+model:
+separate models for each round? - take PS estimate from 1st round
