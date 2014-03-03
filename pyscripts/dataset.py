@@ -72,7 +72,7 @@ def load_seeds():
     return seeds
 
 def load_results(filename):
-    results = { } # season -> team # -> ([win ps], [loss ps])
+    results = { } # season -> team # -> ([(win ps, opponent)], [(loss ps, opponent)])
     with open(filename) as f:
         header = True
         csvreader = csv.reader(f, delimiter=',')
@@ -89,8 +89,8 @@ def load_results(filename):
             if lteam not in results[season]:
                 results[season][lteam] = ([], [])
             ps = wscore - lscore
-            results[season][wteam][0].append(ps)
-            results[season][lteam][1].append(-1*ps)
+            results[season][wteam][0].append((ps, lteam))
+            results[season][lteam][1].append((-1*ps, wteam))
     return results
 
 def main():
