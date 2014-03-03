@@ -6,7 +6,15 @@ higher seed vs lower seed
 hseed record (use moving average?)
 lseed record (use moving average?)
 hseed average point spread
+hseed median point spread
+hseed PS sd
+hseed PS skew
+hseed PS kurtosis
 lseed average point spread
+lseed median point spread
+lseed PS sd
+lseed PS skew
+lseed PS kurtosis
 tourney round number
 
 ordinal data:
@@ -32,11 +40,11 @@ lseed nonconference SOS
 
 
 Nate Silver features:
-Sagarin ratings
+x Sagarin ratings
 Pomeroy ratings
 Sokol LRMC ratings
 Moore power ratings
-Tournament seeds
+x Tournament seeds
 AP preseason poll
 injuries
 geographic location
