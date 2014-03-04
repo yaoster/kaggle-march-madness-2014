@@ -2,6 +2,7 @@
 
 import csv
 from itertools import izip
+import pdb
 
 # directories
 HOME = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/'
@@ -17,6 +18,7 @@ SEASONS = DATA + 'seasons.csv'
 
 # output files
 OUTPUT_FILE = DATA + 'features.csv'
+HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'seed_diff']
 
 # output csv has:
 # target: hseed - lseed point spread
@@ -93,11 +95,31 @@ def load_results(filename):
             results[season][lteam][1].append((-1*ps, wteam))
     return results
 
+def write_data(games, seeds, results):
+    with open(OUTPUT_FILE, 'w') as f:
+        csvwriter = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writerow(HEADER)
+        for game in games.keys():
+            (wteam, wscore, lteam, lscore, slot) = games[game]
+            wteam_seed = int(seeds[game[0]][wteam][1:3])
+            lteam_seed = int(seeds[game[0]][lteam][1:3])
+            hsteam = 0
+            lsteam = 0
+            if wteam_seed <= lteam_seed:
+                hsteam = wteam
+                target = wscore - lscore
+            else:
+                lsteam = lteam
+                target = lscore - wscore
+            game_id = game[0] + '_' + str(game[1]) + '_' + str(game[2])
+            row = [target, game_id, hsteam, lsteam, abs(wteam_seed - lteam_seed)]
+            csvwriter.writerow(row)
+
 def main():
     games = load_games()
     seeds = load_seeds()
     results = load_results(REG_RESULTS)
-    write_data(OUTPUT_FILE)
+    write_data(games, seeds, results)
 
 if __name__ == '__main__':
     main()
