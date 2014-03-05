@@ -120,11 +120,13 @@ def regular_season_features(team, season, results):
     return ret
 
 def skewness(x):
-    xbar = np.mean(x)
-    return 0.0
+    return 3*(np.mean(x) - np.median(x)) / np.std(x)
 
 def kurtosis(x):
-    return 0.0
+    n = float(len(x))
+    xbar = np.mean(x)
+    x4 = sum([float(xi - xbar)**4 for xi in x])/n
+    return x4/np.var(x) - 3
 
 def main():
     games = load_games()
