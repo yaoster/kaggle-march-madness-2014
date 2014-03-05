@@ -22,9 +22,6 @@ preseason ordinal ranking?
 hseed weighted average point spread (weighted by preseasonal ordinal ranking? - need to optimize this)
 lseed weighted average point spread (weighted by preseasonal ordinal ranking?)
 
-Sagarin data:
-power rank spreads
-
 location data:
 distance to school
 
@@ -33,6 +30,9 @@ hseed conference SOS
 lseed conference SOS
 hseed nonconference SOS
 lseed nonconference SOS
+
+Sagarin data:
+power rank spreads
 
 
 
@@ -53,3 +53,10 @@ performance in tournament games thus far
 
 model:
 separate models for each round? - take PS estimate from 1st round
+
+
+
+TODO:
+3/4
+write skewness/kurtosis functions
+evaluate ordinal ranking systems

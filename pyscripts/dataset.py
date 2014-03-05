@@ -2,10 +2,12 @@
 
 import csv
 from itertools import izip
+import numpy as np
 import pdb
 
 # directories
-HOME = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/'
+#HOME = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/'
+HOME = '/home/yaoster/kaggle/kaggle-march-madness-2014/'
 DATA = HOME + 'data/'
 
 # input files
@@ -18,29 +20,10 @@ SEASONS = DATA + 'seasons.csv'
 
 # output files
 OUTPUT_FILE = DATA + 'features.csv'
-HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'seed_diff']
-
-# output csv has:
-# target: hseed - lseed point spread
-# game ID - season + high team number + low team number
-# hseed team number
-# lseed team number
-# tourney round number
-# hseed
-# lseed
-# hseed - lseed (tweak for equal seeds)
-# hseed record
-# lseed record
-# hseed avg point spread
-# hseed median point spread
-# hseed point spread SD
-# hseed point spread skew
-# hseed point spread kurtosis
-# lseed avg point spread
-# lseed median point spread
-# lseed point spread SD
-# lseed point spread skew
-# lseed point spread kurtosis
+HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed_diff', \
+          'hseed_record', 'hseed_avg_ps', 'hseed_median_ps', 'hseed_std_ps', 'hseed_skew_ps', \
+          'hseed_kurtosis_ps', 'lseed_record', 'lseed_avg_ps', 'lseed_median_ps', 'lseed_std_ps', \
+          'lseed_skew_ps', 'lseed_kurtosis_ps']
 
 def load_games():
     games = { } # (season, high # team, low # team) -> (wteam, wscore, lteam, lscore, slot)
@@ -55,7 +38,8 @@ def load_games():
                     continue
                 (season, daynum, wteam, wscore, lteam, lscore) = \
                     (str(row[0]), int(row[1]), int(row[2]), int(row[3]), int(row[4]), int(row[5]))
-                games[(season, max(wteam, lteam), min(wteam, lteam))] = (wteam, wscore, lteam, lscore, slotrow[1])
+                games[(season, max(wteam, lteam), min(wteam, lteam))] = \
+                        (wteam, wscore, lteam, lscore, slotrow[1])
     return games
 
 def load_seeds():
@@ -100,20 +84,47 @@ def write_data(games, seeds, results):
         csvwriter = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(HEADER)
         for game in games.keys():
+            (season, hteam, lteam) = game
             (wteam, wscore, lteam, lscore, slot) = games[game]
-            wteam_seed = int(seeds[game[0]][wteam][1:3])
-            lteam_seed = int(seeds[game[0]][lteam][1:3])
+            wteam_seed = int(seeds[season][wteam][1:3])
+            lteam_seed = int(seeds[season][lteam][1:3])
             hsteam = 0
             lsteam = 0
+            hseed = 0
+            lseed = 0
             if wteam_seed <= lteam_seed:
                 hsteam = wteam
+                lsteam = lteam
+                hseed = wteam_seed
+                lseed = lteam_seed
                 target = wscore - lscore
             else:
-                lsteam = lteam
+                hsteam = lteam
+                lsteam = wteam
+                hseed = lteam_seed
+                lseed = wteam_seed
                 target = lscore - wscore
-            game_id = game[0] + '_' + str(game[1]) + '_' + str(game[2])
-            row = [target, game_id, hsteam, lsteam, abs(wteam_seed - lteam_seed)]
+            game_id = season + '_' + str(hteam) + '_' + str(lteam)
+            row = [target, game_id, hsteam, lsteam, int(slot[1]), hseed, lseed, lseed - hseed]
+            row = row + (regular_season_features(hsteam, season, results))
+            row = row + (regular_season_features(lsteam, season, results))
             csvwriter.writerow(row)
+
+def regular_season_features(team, season, results):
+    ps = results[season][team]
+    wins = [x[0] for x in ps[0]]
+    losses = [x[0] for x in ps[1]]
+    ps = wins + losses
+    ret = [float(len(wins))/len(wins + losses), np.mean(ps), np.median(ps), np.std(ps), \
+           skewness(ps), kurtosis(ps)]
+    return ret
+
+def skewness(x):
+    xbar = np.mean(x)
+    return 0.0
+
+def kurtosis(x):
+    return 0.0
 
 def main():
     games = load_games()
