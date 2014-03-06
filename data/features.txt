@@ -17,22 +17,22 @@ lseed PS skew
 lseed PS kurtosis
 tourney round number
 
-ordinal data:
-preseason ordinal ranking?
+ordinal data (wlk, cpa, col, sag):
+hseed first available ordinal ranking
+hseed last availalbe ordinal ranking
+hseed ranking change
+lseed first available ordinal ranking
+lseed last availalbe ordinal ranking
+lseed ranking change
+hseed vs lseed first available ordinal ranking
+hseed vs lseed last available ordinal ranking
+
+AP preseason poll:
 hseed weighted average point spread (weighted by preseasonal ordinal ranking? - need to optimize this)
 lseed weighted average point spread (weighted by preseasonal ordinal ranking?)
 
 location data:
 distance to school
-
-SOS data:
-hseed conference SOS
-lseed conference SOS
-hseed nonconference SOS
-lseed nonconference SOS
-
-Sagarin data:
-power rank spreads
 
 
 
