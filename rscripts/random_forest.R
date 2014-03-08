@@ -1,4 +1,5 @@
-TRAINING_DATA <- '/home/yaoster/kaggle/kaggle-march-madness-2014/data/features.csv'
+#TRAINING_DATA <- '/home/yaoster/kaggle/kaggle-march-madness-2014/data/features.csv'
+TRAINING_DATA <- '/Users/dyao/src/kaggle/kaggle-march-madness-2014/data/features.csv'
 
 data <- read.table(TRAINING_DATA, sep=',', header=T)
 data$gameid <- NULL

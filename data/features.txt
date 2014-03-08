@@ -17,15 +17,18 @@ lseed PS skew
 lseed PS kurtosis
 tourney round number
 
-ordinal data (wlk, cpa, col, sag):
+ordinal data (wlk, dol, col, sag; last available is last < day 134):
 hseed first available ordinal ranking
 hseed last availalbe ordinal ranking
 hseed ranking change
+hseed power score change
 lseed first available ordinal ranking
 lseed last availalbe ordinal ranking
 lseed ranking change
-hseed vs lseed first available ordinal ranking
-hseed vs lseed last available ordinal ranking
+lseed power score change
+hseed vs lseed power score, first available
+hseed vs lseed power score, last available
+change in hseed vs lseed power score
 
 AP preseason poll:
 hseed weighted average point spread (weighted by preseasonal ordinal ranking? - need to optimize this)

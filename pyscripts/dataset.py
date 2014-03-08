@@ -3,12 +3,10 @@
 import csv
 from itertools import izip
 import numpy as np
-import pdb
 
 # directories
-#HOME = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/'
-HOME = '/home/yaoster/kaggle/kaggle-march-madness-2014/'
-DATA = HOME + 'data/'
+DATA = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/data/'
+#DATA = '/home/yaoster/kaggle/kaggle-march-madness-2014/data/'
 
 # input files
 TEAMS = DATA + 'teams.csv'
@@ -17,13 +15,27 @@ REG_RESULTS = DATA + 'regular_season_results.csv'
 SLOTS = DATA + 'tourney_slots.csv'
 SEEDS = DATA + 'tourney_seeds.csv'
 SEASONS = DATA + 'seasons.csv'
+RANKINGS = DATA + 'ordinal_ranks_core_33.csv'
 
 # output files
 OUTPUT_FILE = DATA + 'features.csv'
 HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed_diff', \
           'hseed_record', 'hseed_avg_ps', 'hseed_median_ps', 'hseed_std_ps', 'hseed_skew_ps', \
           'hseed_kurtosis_ps', 'lseed_record', 'lseed_avg_ps', 'lseed_median_ps', 'lseed_std_ps', \
-          'lseed_skew_ps', 'lseed_kurtosis_ps']
+          'lseed_skew_ps', 'lseed_kurtosis_ps', \
+          'wlk_hrank_first', 'wlk_hrank_last', 'wlk_hrank_last_vs_first', 'wlk_hrank_last_vs_first_ps', \
+          'wlk_lrank_first', 'wlk_lrank_last', 'wlk_lrank_last_vs_first', 'wlk_lrank_last_vs_first_ps', \
+          'wlk_ps_first', 'wlk_ps_last', 'wlk_ps_last_vs_first', \
+          'dol_hrank_first', 'dol_hrank_last', 'dol_hrank_last_vs_first', 'dol_hrank_last_vs_first_ps', \
+          'dol_lrank_first', 'dol_lrank_last', 'dol_lrank_last_vs_first', 'dol_lrank_last_vs_first_ps', \
+          'dol_ps_first', 'dol_ps_last', 'dol_ps_last_vs_first', \
+          'col_hrank_first', 'col_hrank_last', 'col_hrank_last_vs_first', 'col_hrank_last_vs_first_ps', \
+          'col_lrank_first', 'col_lrank_last', 'col_lrank_last_vs_first', 'col_lrank_last_vs_first_ps', \
+          'col_ps_first', 'col_ps_last', 'col_ps_last_vs_first', \
+          'sag_hrank_first', 'sag_hrank_last', 'sag_hrank_last_vs_first', 'sag_hrank_last_vs_first_ps', \
+          'sag_lrank_first', 'sag_lrank_last', 'sag_lrank_last_vs_first', 'sag_lrank_last_vs_first_ps', \
+          'sag_ps_first', 'sag_ps_last', 'sag_ps_last_vs_first']
+
 
 def load_games():
     games = { } # (season, high # team, low # team) -> (wteam, wscore, lteam, lscore, slot)
@@ -42,6 +54,7 @@ def load_games():
                         (wteam, wscore, lteam, lscore, slotrow[1])
     return games
 
+
 def load_seeds():
     seeds = { } # season -> team # -> (region, seed)
     with open(SEEDS, 'r') as f:
@@ -56,6 +69,28 @@ def load_seeds():
                 seeds[season] = { }
             seeds[season][team] = seed
     return seeds
+
+
+def load_rankings():
+    rankings = { } # season -> team # -> name -> (day, ranking)
+    with open(RANKINGS, 'r') as f:
+        header = True
+        csvreader = csv.reader(f, delimiter=',')
+        for row in csvreader:
+            if header:
+                header = False
+                continue
+            (season, day, name, team, rank) = (str(row[0]), int(row[1]), str(row[2]), int(row[3]), int(row[4]))
+            if season not in rankings:
+                rankings[season] = { }
+            if team not in rankings[season]:
+                rankings[season][team] = { }
+            if name not in rankings[season][team]:
+                rankings[season][team][name] = []
+            if day < 134:
+                rankings[season][team][name].append((day, rank))
+    return rankings
+
 
 def load_results(filename):
     results = { } # season -> team # -> ([(win ps, opponent)], [(loss ps, opponent)])
@@ -79,7 +114,8 @@ def load_results(filename):
             results[season][lteam][1].append((-1*ps, wteam))
     return results
 
-def write_data(games, seeds, results):
+
+def write_data(games, seeds, rankings, results):
     with open(OUTPUT_FILE, 'w') as f:
         csvwriter = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(HEADER)
@@ -108,7 +144,12 @@ def write_data(games, seeds, results):
             row = [target, game_id, hsteam, lsteam, int(slot[1]), hseed, lseed, lseed - hseed]
             row = row + (regular_season_features(hsteam, season, results))
             row = row + (regular_season_features(lsteam, season, results))
+            row = row + (ranking_features('WLK', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('DOL', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('COL', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('SAG', hsteam, lsteam, season, rankings))
             csvwriter.writerow(row)
+
 
 def regular_season_features(team, season, results):
     ps = results[season][team]
@@ -119,8 +160,28 @@ def regular_season_features(team, season, results):
            skewness(ps), kurtosis(ps)]
     return ret
 
+
+def ranking_features(name, hsteam, lsteam, season, rankings):
+    if season not in rankings:
+        return ['NA']*11
+    hrank_first = rankings[season][hsteam][name][0][1]
+    hrank_last = rankings[season][hsteam][name][-1][1]
+    hrank_first_ps = rank_to_rating(hrank_first)
+    hrank_last_ps = rank_to_rating(hrank_last)
+    lrank_first = rankings[season][lsteam][name][0][1]
+    lrank_last = rankings[season][lsteam][name][-1][1]
+    lrank_first_ps = rank_to_rating(lrank_first)
+    lrank_last_ps = rank_to_rating(lrank_last)
+    vs_first = hrank_first_ps - lrank_first_ps
+    vs_last = hrank_last_ps - lrank_last_ps
+    ret = [hrank_first, hrank_last, hrank_last - hrank_first, hrank_last_ps - hrank_first_ps, lrank_first, \
+           lrank_last, lrank_last - lrank_first, lrank_last_ps - lrank_first_ps, vs_first, vs_last, vs_last - vs_first]
+    return ret
+
+
 def skewness(x):
     return 3*(np.mean(x) - np.median(x)) / np.std(x)
+
 
 def kurtosis(x):
     n = float(len(x))
@@ -128,11 +189,17 @@ def kurtosis(x):
     x4 = sum([float(xi - xbar)**4 for xi in x])/n
     return x4/np.var(x) - 3
 
+
+def rank_to_rating(rank):
+    return 100 - 4*np.log(rank + 1) - rank/22
+
+
 def main():
     games = load_games()
     seeds = load_seeds()
+    rankings = load_rankings()
     results = load_results(REG_RESULTS)
-    write_data(games, seeds, results)
+    write_data(games, seeds, rankings, results)
 
 if __name__ == '__main__':
     main()
