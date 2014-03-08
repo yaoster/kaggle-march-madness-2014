@@ -29,13 +29,22 @@ lseed power score change
 hseed vs lseed power score, first available
 hseed vs lseed power score, last available
 change in hseed vs lseed power score
+*** historical ps vs expected(sag) ps
+
+---
+
+location data:
+distance to school
+
+NCAA s-curve:
+hseed ranking
+lseed ranking
+hseed vs lseed power score
 
 AP preseason poll:
 hseed weighted average point spread (weighted by preseasonal ordinal ranking? - need to optimize this)
 lseed weighted average point spread (weighted by preseasonal ordinal ranking?)
 
-location data:
-distance to school
 
 
 
@@ -44,9 +53,9 @@ distance to school
 
 Nate Silver features:
 x Sagarin ratings
-Pomeroy ratings
-Sokol LRMC ratings
-Moore power ratings
+x Pomeroy ratings
+x Sokol LRMC ratings
+x Moore power ratings
 x Tournament seeds
 AP preseason poll
 injuries
