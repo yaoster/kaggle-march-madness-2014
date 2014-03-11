@@ -2,7 +2,7 @@ target:
 higher seeded team points - lower seeded team points (or alphabetical ordering if equal)
 
 provided data::
-higher seed vs lower seed
+higher seed vs lower seed ------> change to power score?
 hseed record (use moving average?)
 lseed record (use moving average?)
 hseed average point spread
@@ -29,46 +29,9 @@ lseed power score change
 hseed vs lseed power score, first available
 hseed vs lseed power score, last available
 change in hseed vs lseed power score
-*** historical ps vs expected(sag) ps
+historical ps vs expected(sag) ps
 
 ---
 
 location data:
 distance to school
-
-NCAA s-curve:
-hseed ranking
-lseed ranking
-hseed vs lseed power score
-
-AP preseason poll:
-hseed weighted average point spread (weighted by preseasonal ordinal ranking? - need to optimize this)
-lseed weighted average point spread (weighted by preseasonal ordinal ranking?)
-
-
-
-
-
-
-
-Nate Silver features:
-x Sagarin ratings
-x Pomeroy ratings
-x Sokol LRMC ratings
-x Moore power ratings
-x Tournament seeds
-AP preseason poll
-injuries
-geographic location
-performance in tournament games thus far
-
-
-model:
-separate models for each round? - take PS estimate from 1st round
-
-
-
-TODO:
-3/4
-write skewness/kurtosis functions
-evaluate ordinal ranking systems

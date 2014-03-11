@@ -3,10 +3,11 @@
 import csv
 from itertools import izip
 import numpy as np
+from os.path import expanduser
 
 # directories
-DATA = '/Users/dyao/src/kaggle/kaggle-march-madness-2014/data/'
-#DATA = '/home/yaoster/kaggle/kaggle-march-madness-2014/data/'
+HOME= expanduser("~")
+DATA = HOME + '/kaggle/kaggle-march-madness-2014/data/'
 
 # input files
 TEAMS = DATA + 'teams.csv'
@@ -21,8 +22,10 @@ RANKINGS = DATA + 'ordinal_ranks_core_33.csv'
 OUTPUT_FILE = DATA + 'features.csv'
 HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed_diff', \
           'hseed_record', 'hseed_avg_ps', 'hseed_median_ps', 'hseed_std_ps', 'hseed_skew_ps', \
-          'hseed_kurtosis_ps', 'lseed_record', 'lseed_avg_ps', 'lseed_median_ps', 'lseed_std_ps', \
-          'lseed_skew_ps', 'lseed_kurtosis_ps', \
+          'hseed_kurtosis_ps', 'hseed_avg_eps', 'hseed_median_eps', 'hseed_std_eps', \
+          'hseed_skew_eps', 'hseed_kurtosis_eps', 'lseed_record', 'lseed_avg_ps', \
+          'lseed_median_ps', 'lseed_std_ps', 'lseed_skew_ps', 'lseed_kurtosis_ps', 'lseed_avg_eps', \
+          'lseed_median_eps', 'lseed_std_eps', 'lseed_skew_eps', 'lseed_kurtosis_eps', \
           'wlk_hrank_first', 'wlk_hrank_last', 'wlk_hrank_last_vs_first', 'wlk_hrank_last_vs_first_ps', \
           'wlk_lrank_first', 'wlk_lrank_last', 'wlk_lrank_last_vs_first', 'wlk_lrank_last_vs_first_ps', \
           'wlk_ps_first', 'wlk_ps_last', 'wlk_ps_last_vs_first', \
@@ -92,8 +95,8 @@ def load_rankings():
     return rankings
 
 
-def load_results(filename):
-    results = { } # season -> team # -> ([(win ps, opponent)], [(loss ps, opponent)])
+def load_results(filename, rankings):
+    results = { } # season -> team # -> ([(win ps, opponent, win ps - E[ps])], [(loss ps, opponent, loss ps - E[ps])])
     with open(filename) as f:
         header = True
         csvreader = csv.reader(f, delimiter=',')
@@ -110,8 +113,17 @@ def load_results(filename):
             if lteam not in results[season]:
                 results[season][lteam] = ([], [])
             ps = wscore - lscore
-            results[season][wteam][0].append((ps, lteam))
-            results[season][lteam][1].append((-1*ps, wteam))
+            ps_vs_eps = 'NA'
+            if season in rankings and wteam in rankings[season] and lteam in rankings[season]:
+                wteam_rank = rankings[season][wteam]['SAG'][-1][1]
+                lteam_rank = rankings[season][lteam]['SAG'][-1][1]
+                eps = rank_to_rating(wteam_rank) - rank_to_rating(lteam_rank)
+                ps_vs_eps = ps - eps
+            results[season][wteam][0].append((ps, lteam, ps_vs_eps))
+            if ps_vs_eps == 'NA':
+                results[season][lteam][1].append((-1*ps, wteam, ps_vs_eps))
+            else:
+                results[season][lteam][1].append((-1*ps, wteam, -1*ps_vs_eps))
     return results
 
 
@@ -155,9 +167,15 @@ def regular_season_features(team, season, results):
     ps = results[season][team]
     wins = [x[0] for x in ps[0]]
     losses = [x[0] for x in ps[1]]
+    ps_vs_eps = [x[2] for x in ps[0] if x[2] != 'NA'] + [x[2] for x in ps[1] if x[2] != 'NA']
     ps = wins + losses
     ret = [float(len(wins))/len(wins + losses), np.mean(ps), np.median(ps), np.std(ps), \
            skewness(ps), kurtosis(ps)]
+    if len(ps_vs_eps) > 5:
+        ret = ret + [np.mean(ps_vs_eps), np.median(ps_vs_eps), np.std(ps_vs_eps), \
+                     skewness(ps_vs_eps), kurtosis(ps_vs_eps)]
+    else:
+        ret = ret + ['NA']*5
     return ret
 
 
@@ -174,8 +192,9 @@ def ranking_features(name, hsteam, lsteam, season, rankings):
     lrank_last_ps = rank_to_rating(lrank_last)
     vs_first = hrank_first_ps - lrank_first_ps
     vs_last = hrank_last_ps - lrank_last_ps
-    ret = [hrank_first, hrank_last, hrank_last - hrank_first, hrank_last_ps - hrank_first_ps, lrank_first, \
-           lrank_last, lrank_last - lrank_first, lrank_last_ps - lrank_first_ps, vs_first, vs_last, vs_last - vs_first]
+    ret = [hrank_first, hrank_last, hrank_last - hrank_first, hrank_last_ps - hrank_first_ps, \
+           lrank_first, lrank_last, lrank_last - lrank_first, lrank_last_ps - lrank_first_ps, \
+           vs_first, vs_last, vs_last - vs_first]
     return ret
 
 
@@ -198,7 +217,7 @@ def main():
     games = load_games()
     seeds = load_seeds()
     rankings = load_rankings()
-    results = load_results(REG_RESULTS)
+    results = load_results(REG_RESULTS, rankings)
     write_data(games, seeds, rankings, results)
 
 if __name__ == '__main__':
