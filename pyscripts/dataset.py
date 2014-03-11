@@ -7,7 +7,7 @@ from os.path import expanduser
 
 # directories
 HOME= expanduser("~")
-DATA = HOME + '/kaggle/kaggle-march-madness-2014/data/'
+DATA = HOME + '/src/kaggle/kaggle-march-madness-2014/data/'
 
 # input files
 TEAMS = DATA + 'teams.csv'
@@ -41,7 +41,7 @@ HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed
 
 
 def load_games():
-    games = { } # (season, high # team, low # team) -> (wteam, wscore, lteam, lscore, slot)
+    games = [] # (season, high # team, low # team, wteam, wscore, lteam, lscore, slot)
     with open(TOURNEY_RESULTS, 'r') as f:
         with open(SLOTS, 'r') as fslots:
             header = True
@@ -53,8 +53,7 @@ def load_games():
                     continue
                 (season, daynum, wteam, wscore, lteam, lscore) = \
                     (str(row[0]), int(row[1]), int(row[2]), int(row[3]), int(row[4]), int(row[5]))
-                games[(season, max(wteam, lteam), min(wteam, lteam))] = \
-                        (wteam, wscore, lteam, lscore, slotrow[1])
+                games.append((season, max(wteam, lteam), min(wteam, lteam), wteam, wscore, lteam, lscore, slotrow[1]))
     return games
 
 
@@ -131,28 +130,27 @@ def write_data(games, seeds, rankings, results):
     with open(OUTPUT_FILE, 'w') as f:
         csvwriter = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(HEADER)
-        for game in games.keys():
-            (season, hteam, lteam) = game
-            (wteam, wscore, lteam, lscore, slot) = games[game]
-            wteam_seed = int(seeds[season][wteam][1:3])
-            lteam_seed = int(seeds[season][lteam][1:3])
+        for game in games:
+            (season, high_num_team, low_num_team, winteam, wscore, loseteam, lscore, slot) = game
+            wteam_seed = int(seeds[season][winteam][1:3])
+            lteam_seed = int(seeds[season][loseteam][1:3])
             hsteam = 0
             lsteam = 0
             hseed = 0
             lseed = 0
             if wteam_seed <= lteam_seed:
-                hsteam = wteam
-                lsteam = lteam
+                hsteam = winteam 
+                lsteam = loseteam
                 hseed = wteam_seed
                 lseed = lteam_seed
                 target = wscore - lscore
             else:
-                hsteam = lteam
-                lsteam = wteam
+                hsteam = loseteam
+                lsteam = winteam
                 hseed = lteam_seed
                 lseed = wteam_seed
                 target = lscore - wscore
-            game_id = season + '_' + str(hteam) + '_' + str(lteam)
+            game_id = season + '_' + str(high_num_team) + '_' + str(low_num_team)
             row = [target, game_id, hsteam, lsteam, int(slot[1]), hseed, lseed, lseed - hseed]
             row = row + (regular_season_features(hsteam, season, results))
             row = row + (regular_season_features(lsteam, season, results))
