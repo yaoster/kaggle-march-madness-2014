@@ -17,10 +17,12 @@ SLOTS = DATA + 'tourney_slots.csv'
 SEEDS = DATA + 'tourney_seeds.csv'
 SEASONS = DATA + 'seasons.csv'
 RANKINGS = DATA + 'ordinal_ranks_core_33.csv'
+TEST_SEASON = DATA + 'test_season.csv'
 
 # output files
 OUTPUT_FILE = DATA + 'features.csv'
-HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed_diff', \
+TEST_FILE = DATA + 'test.csv'
+HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'hseed', 'lseed', 'seed_diff', \
           'hseed_record', 'hseed_avg_ps', 'hseed_median_ps', 'hseed_std_ps', 'hseed_skew_ps', \
           'hseed_kurtosis_ps', 'hseed_avg_eps', 'hseed_median_eps', 'hseed_std_eps', \
           'hseed_skew_eps', 'hseed_kurtosis_eps', 'lseed_record', 'lseed_avg_ps', \
@@ -39,9 +41,12 @@ HEADER = ['target', 'gameid', 'hteam' ,'lteam', 'round', 'hseed', 'lseed', 'seed
           'sag_lrank_first', 'sag_lrank_last', 'sag_lrank_last_vs_first', 'sag_lrank_last_vs_first_ps', \
           'sag_ps_first', 'sag_ps_last', 'sag_ps_last_vs_first']
 
+# global variables
+TEST_SEASON = 'S'
+
 
 def load_games():
-    games = [] # (season, high # team, low # team, wteam, wscore, lteam, lscore, slot)
+    games = [] # (season, high # team, low # team, wteam, wscore, lteam, lscore)
     with open(TOURNEY_RESULTS, 'r') as f:
         with open(SLOTS, 'r') as fslots:
             header = True
@@ -54,6 +59,28 @@ def load_games():
                 (season, daynum, wteam, wscore, lteam, lscore) = \
                     (str(row[0]), int(row[1]), int(row[2]), int(row[3]), int(row[4]), int(row[5]))
                 games.append((season, max(wteam, lteam), min(wteam, lteam), wteam, wscore, lteam, lscore, slotrow[1]))
+    return games
+
+
+def load_test_games():
+    # read from tourney seeds
+    games = []
+    teams = []
+    with open(SEEDS, 'r') as f:
+        header = True
+        csvreader = csv.reader(f, delimiter=',')
+        for row in csvreader:
+            if header:
+                header = False
+                continue
+            (season, seed, team) = (str(row[0]), str(row[1]), int(row[2]))
+            if season != TEST_SEASON:
+                continue
+            teams.append(team)
+    teams = sorted(teams)
+    for i in xrange(len(teams) - 1):
+        for j in xrange(i + 1, len(teams)):
+            games.append((TEST_SEASON, teams[j], teams[i])) # HIGH team, LOW team
     return games
 
 
@@ -138,7 +165,7 @@ def write_data(games, seeds, rankings, results):
             lsteam = 0
             hseed = 0
             lseed = 0
-            if wteam_seed <= lteam_seed:
+            if wteam_seed < lteam_seed:
                 hsteam = winteam 
                 lsteam = loseteam
                 hseed = wteam_seed
@@ -151,7 +178,40 @@ def write_data(games, seeds, rankings, results):
                 lseed = wteam_seed
                 target = lscore - wscore
             game_id = season + '_' + str(high_num_team) + '_' + str(low_num_team)
-            row = [target, game_id, hsteam, lsteam, int(slot[1]), hseed, lseed, lseed - hseed]
+            row = [target, game_id, hsteam, lsteam, hseed, lseed, lseed - hseed]
+            row = row + (regular_season_features(hsteam, season, results))
+            row = row + (regular_season_features(lsteam, season, results))
+            row = row + (ranking_features('WLK', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('DOL', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('COL', hsteam, lsteam, season, rankings))
+            row = row + (ranking_features('SAG', hsteam, lsteam, season, rankings))
+            csvwriter.writerow(row)
+
+
+def write_test_data(test_games, seeds, rankings, results):
+    with open(TEST_FILE, 'w') as f:
+        csvwriter = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writerow(HEADER[1:])
+        for game in test_games:
+            (season, high_num_team, low_num_team) = game
+            high_team_seed = int(seeds[season][high_num_team][1:3])
+            low_team_seed = int(seeds[season][low_num_team][1:3])
+            hsteam = 0
+            lsteam = 0
+            hseed = 0
+            lseed = 0
+            if high_team_seed <= low_team_seed:
+                hsteam = high_num_team
+                lsteam = low_num_team
+                hseed = high_team_seed
+                lseed = low_team_seed
+            else:
+                hsteam = low_num_team
+                lsteam = high_num_team
+                hseed = low_team_seed
+                lseed = high_team_seed
+            game_id = season + '_' + str(high_num_team) + '_' + str(low_num_team)
+            row = [game_id, hsteam, lsteam, hseed, lseed, lseed - hseed]
             row = row + (regular_season_features(hsteam, season, results))
             row = row + (regular_season_features(lsteam, season, results))
             row = row + (ranking_features('WLK', hsteam, lsteam, season, rankings))
@@ -204,7 +264,7 @@ def kurtosis(x):
     n = float(len(x))
     xbar = np.mean(x)
     x4 = sum([float(xi - xbar)**4 for xi in x])/n
-    return x4/np.var(x) - 3
+    return x4/(np.var(x)**2) - 3
 
 
 def rank_to_rating(rank):
@@ -217,6 +277,8 @@ def main():
     rankings = load_rankings()
     results = load_results(REG_RESULTS, rankings)
     write_data(games, seeds, rankings, results)
+    test_games = load_test_games()
+    write_test_data(test_games, seeds, rankings, results)
 
 if __name__ == '__main__':
     main()
